@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: exam-sheet-mcp
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:http
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20

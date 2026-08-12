@@ -24,6 +24,18 @@ Add the server to your MCP host config, e.g. `claude_desktop_config.json`:
 
 Restart the host after saving the config.
 
+### As a remote connector (Claude.ai)
+
+The same server also runs as a remote Streamable HTTP endpoint at `/mcp`
+(`src/httpServer.ts`), so it can be added on Claude.ai as a connector by URL
+instead of a local install. In that mode it has no API key of its own —
+question generation and grading go through MCP sampling, i.e. the connected
+client's own model — and each session gets its own isolated exam store.
+
+Deploy it anywhere that runs a Node web service (a `render.yaml` blueprint is
+included for Render's free tier); then add `https://<your-deployment>/mcp` as
+a connector URL in Claude.ai.
+
 ## Usage
 
 Ask the host to run **generate_exam** with a topic, e.g. "Generate an exam on
@@ -40,6 +52,7 @@ npm run typecheck
 npm run build     # compiles TypeScript to dist/
 export ANTHROPIC_API_KEY=sk-ant-...
 npm start         # runs the server over stdio
+npm run start:http  # runs the remote (Streamable HTTP) entrypoint on :3000
 ```
 
 To try a local build in Claude Desktop, point the config at the compiled file
