@@ -6,27 +6,30 @@ true/false, multiple-choice, and open questions. Objective questions are graded
 instantly; open answers are graded by the model. At the end you get a report
 with a grade out of 100.
 
-## How it works
+## Installation
 
-An MCP App is a **tool + a UI resource** linked by `_meta.ui.resourceUri`:
+Add the server to your MCP host config, e.g. `claude_desktop_config.json`:
 
-- `generate_exam` — the entry tool. Generates the questions and opens the sheet.
-- `get_exam` — called by the sheet on load to fetch questions and the answer key.
-- `grade_answer` — called by the sheet to grade an open answer.
-- `ui://exam-sheet/exam.html` — the interactive sheet, rendered in a sandboxed iframe.
-
+```json
+{
+  "mcpServers": {
+    "exam-sheet": {
+      "command": "npx",
+      "args": ["-y", "@giuliobmb/exam-sheet-mcp"],
+      "env": { "ANTHROPIC_API_KEY": "sk-ant-..." }
+    }
+  }
+}
 ```
-src/
-  types.ts       shared types
-  examLogic.ts   pure logic (prompts, parsing, scoring, grade conversion) — fully tested
-  llm.ts         LLM client interface + Anthropic implementation (lazy-loaded)
-  examStore.ts   generation + grading orchestration, in-memory exam store
-  ui.ts          the exam sheet HTML (vanilla JS, talks to the host via ext-apps)
-  index.ts       MCP server: registers the resource and the three tools
-test/
-  examLogic.test.ts
-  examStore.test.ts
-```
+
+Restart the host after saving the config.
+
+## Usage
+
+Ask the host to run **generate_exam** with a topic, e.g. "Generate an exam on
+the French Revolution." The interactive sheet opens with a timer; answer each
+question and submit to see instant grading (or model-graded feedback for open
+questions). At the end you get a full report with a grade out of 100.
 
 ## Local development
 
@@ -39,7 +42,8 @@ export ANTHROPIC_API_KEY=sk-ant-...
 npm start         # runs the server over stdio
 ```
 
-To try it in Claude Desktop, add to your MCP config:
+To try a local build in Claude Desktop, point the config at the compiled file
+instead of the npm package:
 
 ```json
 {
@@ -52,64 +56,3 @@ To try it in Claude Desktop, add to your MCP config:
   }
 }
 ```
-
-Then ask the host to run **generate_exam** with a topic.
-
-## Publishing
-
-The MCP Registry stores **metadata only** — it does not host your code. So you
-publish the package to npm first, then register the metadata. Run these from
-**your own machine**, logged into your own npm and GitHub accounts.
-
-Before you start, replace the placeholders in `package.json` and `server.json`:
-
-- `YOUR_NPM_USERNAME` → your npm username (the `@scope`)
-- `YOUR_GITHUB_USERNAME` → your GitHub username (used for the `io.github.*` namespace)
-
-### 1. Publish the package to npm
-
-```bash
-npm login
-npm run build
-npm publish --access public
-```
-
-### 2. Install the registry publisher CLI
-
-```bash
-# macOS/Linux (Homebrew)
-brew install mcp-publisher
-# or download a release binary from the modelcontextprotocol/registry repo
-```
-
-### 3. Authenticate with a namespace that matches your server name
-
-The server name is `io.github.YOUR_GITHUB_USERNAME/exam-sheet`, so authenticate
-with GitHub — the namespace must match:
-
-```bash
-mcp-publisher login github
-```
-
-### 4. Publish to the registry
-
-```bash
-mcp-publisher publish
-```
-
-This validates `server.json`, checks that the npm package carries the matching
-`mcpName` field (already set in `package.json`), and submits the metadata.
-
-### 5. Verify
-
-Search the registry for `io.github.YOUR_GITHUB_USERNAME/exam-sheet` and confirm
-the version and package reference resolve. Submissions are reviewed, so approval
-may not be instant.
-
-## Notes
-
-- Keep the `@modelcontextprotocol/ext-apps` version used via `esm.sh` in
-  `src/ui.ts` aligned with the dependency version in `package.json`.
-- The server generates questions and grades open answers with the Anthropic API.
-  If you prefer not to ship an API key, swap `AnthropicClient` for an
-  implementation backed by MCP sampling (ask the host's model instead).
