@@ -3,11 +3,13 @@ import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createServer } from "./index.js";
 import { ExamStore } from "./examStore.js";
 import { SamplingLLMClient } from "./llm.js";
+import { OpenAuthProvider } from "./oauth.js";
 
 /**
  * Remote (Streamable HTTP) entrypoint, for use as a Claude.ai connector.
@@ -21,12 +23,24 @@ import { SamplingLLMClient } from "./llm.js";
  */
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const PUBLIC_URL = process.env.PUBLIC_URL ?? `http://localhost:${PORT}`;
 
 const app = createMcpExpressApp({ host: "0.0.0.0" });
 
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).send("exam-sheet MCP server is running. Connect at /mcp.");
 });
+
+// OAuth surface for hosts whose connector flow always attempts Dynamic
+// Client Registration (see OpenAuthProvider docstring). /mcp is not gated
+// behind it — clients that skip auth entirely keep working.
+app.use(
+  mcpAuthRouter({
+    provider: new OpenAuthProvider(),
+    issuerUrl: new URL(PUBLIC_URL),
+    scopesSupported: ["mcp:tools"],
+  }),
+);
 
 // One transport (and one McpServer + ExamStore) per active session.
 const transports: Record<string, StreamableHTTPServerTransport> = {};

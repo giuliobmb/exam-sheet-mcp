@@ -9,3 +9,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: PUBLIC_URL
+        value: https://exam-sheet-mcp.onrender.com
