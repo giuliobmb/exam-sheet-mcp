@@ -1,0 +1,45 @@
+{
+  "name": "@giuliobmb/exam-sheet-mcp",
+  "version": "1.0.0",
+  "description": "An MCP App that generates a timed exam on any topic (true/false, multiple choice, open questions) and renders an interactive exam sheet with live grading and a final grade out of 100.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "exam-sheet-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "server.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "mcpName": "io.github.giuliobmb/exam-sheet",
+  "keywords": [
+    "mcp",
+    "mcp-app",
+    "modelcontextprotocol",
+    "exam",
+    "flashcards",
+    "study"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@mcp-ui/server": "^5.0.0",
+    "@modelcontextprotocol/ext-apps": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

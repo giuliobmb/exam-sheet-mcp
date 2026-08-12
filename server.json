@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.giuliobmb/exam-sheet",
+  "description": "Generate a timed exam on any topic and take it in an interactive exam sheet with live grading.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/giuliobmb/exam-sheet-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@giuliobmb/exam-sheet-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "description": "API key used to generate questions and grade open answers.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
