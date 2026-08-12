@@ -24,17 +24,24 @@ Add the server to your MCP host config, e.g. `claude_desktop_config.json`:
 
 Restart the host after saving the config.
 
-### As a remote connector (Claude.ai)
+### As a remote connector (Claude.ai or ChatGPT)
 
 The same server also runs as a remote Streamable HTTP endpoint at `/mcp`
-(`src/httpServer.ts`), so it can be added on Claude.ai as a connector by URL
-instead of a local install. In that mode it has no API key of its own —
-question generation and grading go through MCP sampling, i.e. the connected
-client's own model — and each session gets its own isolated exam store.
+(`src/httpServer.ts`), so it can be added as a connector by URL instead of a
+local install — on Claude.ai directly, or on ChatGPT via Settings → Apps →
+Advanced settings → Developer mode → Add connector. In that mode it has no
+API key of its own — question generation and grading go through MCP
+sampling, i.e. the connected client's own model — and each session gets its
+own isolated exam store.
+
+The exam sheet UI is registered twice: once as an MCP Apps resource for
+Claude, once adapted for ChatGPT's Apps SDK (`_meta["openai/outputTemplate"]`
+on `generate_exam`, via `@mcp-ui/server`'s `appsSdk` adapter) — same HTML,
+no changes needed between hosts.
 
 Deploy it anywhere that runs a Node web service (a `render.yaml` blueprint is
 included for Render's free tier); then add `https://<your-deployment>/mcp` as
-a connector URL in Claude.ai.
+a connector URL.
 
 ## Usage
 

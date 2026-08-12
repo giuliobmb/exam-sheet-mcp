@@ -14,6 +14,11 @@ import { examAppHtml } from "./ui.js";
 import type { GenerateExamInput } from "./types.js";
 
 const RESOURCE_URI = "ui://exam-sheet/exam.html";
+// Separate resource for ChatGPT (Apps SDK): same HTML, wrapped with the
+// appsSdk adapter, which injects the Apps SDK bridge script and switches the
+// MIME type to text/html+skybridge. MCP Apps hosts (Claude) keep using
+// RESOURCE_URI above instead.
+const APPS_SDK_RESOURCE_URI = "ui://exam-sheet/exam-appssdk.html";
 
 function jsonResult(data: unknown) {
   return {
@@ -25,7 +30,7 @@ function jsonResult(data: unknown) {
 export function createServer(store = new ExamStore(new AnthropicClient())): McpServer {
   const server = new McpServer({ name: "exam-sheet", version: "1.0.0" });
 
-  // UI resource (the exam sheet).
+  // UI resource (the exam sheet), for MCP Apps hosts (Claude).
   const ui = createUIResource({
     uri: RESOURCE_URI,
     content: { type: "rawHtml", htmlString: examAppHtml() },
@@ -34,6 +39,22 @@ export function createServer(store = new ExamStore(new AnthropicClient())): McpS
   registerAppResource(server, "exam_sheet_ui", ui.resource.uri, {}, async () => ({
     contents: [ui.resource],
   }));
+
+  // Same sheet, adapted for ChatGPT (Apps SDK). Registered as a plain
+  // resource, not via registerAppResource, since that helper applies the
+  // MCP Apps MIME type default instead of the adapter's own.
+  const uiAppsSdk = createUIResource({
+    uri: APPS_SDK_RESOURCE_URI,
+    content: { type: "rawHtml", htmlString: examAppHtml() },
+    encoding: "text",
+    adapters: { appsSdk: { enabled: true } },
+  });
+  server.registerResource(
+    "exam_sheet_ui_appssdk",
+    uiAppsSdk.resource.uri,
+    {},
+    async () => ({ contents: [uiAppsSdk.resource] }),
+  );
 
   // Entry tool: generate an exam and open the sheet.
   registerAppTool(
@@ -58,7 +79,14 @@ export function createServer(store = new ExamStore(new AnthropicClient())): McpS
           .default([...QUESTION_TYPES])
           .describe("Question types to mix."),
       },
-      _meta: { ui: { resourceUri: RESOURCE_URI } },
+      annotations: { readOnlyHint: false, destructiveHint: false },
+      _meta: {
+        ui: { resourceUri: RESOURCE_URI },
+        "openai/outputTemplate": APPS_SDK_RESOURCE_URI,
+        "openai/widgetDescription": "Interactive timed exam sheet with live grading.",
+        "openai/toolInvocation/invoking": "Generating exam…",
+        "openai/toolInvocation/invoked": "Exam ready",
+      },
     },
     async (args) => {
       const input: GenerateExamInput = {
@@ -81,8 +109,10 @@ export function createServer(store = new ExamStore(new AnthropicClient())): McpS
   server.registerTool(
     "get_exam",
     {
+      title: "Get exam",
       description: "Return the most recent exam for the sheet to render.",
       inputSchema: { examId: z.string().optional() },
+      annotations: { readOnlyHint: true, destructiveHint: false },
     },
     async ({ examId }) =>
       jsonResult({
@@ -95,12 +125,14 @@ export function createServer(store = new ExamStore(new AnthropicClient())): McpS
   server.registerTool(
     "grade_answer",
     {
+      title: "Grade answer",
       description: "Grade a single open-question answer and return score plus feedback.",
       inputSchema: {
         examId: z.string().optional(),
         questionIndex: z.number().int().min(0),
         studentAnswer: z.string(),
       },
+      annotations: { readOnlyHint: false, destructiveHint: false },
     },
     async ({ examId, questionIndex, studentAnswer }) => {
       const grade = await store.gradeOpenAnswer(examId, questionIndex, studentAnswer);
