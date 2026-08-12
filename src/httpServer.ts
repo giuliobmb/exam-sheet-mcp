@@ -26,6 +26,11 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const PUBLIC_URL = process.env.PUBLIC_URL ?? `http://localhost:${PORT}`;
 
 const app = createMcpExpressApp({ host: "0.0.0.0" });
+// Render (and most PaaS hosts) put the app behind one reverse-proxy hop, so
+// X-Forwarded-For's rightmost entry is the real client IP. Without this,
+// express-rate-limit (used internally by mcpAuthRouter) refuses to trust
+// the header and throws on every request.
+app.set("trust proxy", 1);
 
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).send("exam-sheet MCP server is running. Connect at /mcp.");
